@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -30,7 +29,6 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 
-// Mock data
 const generateMockLogs = (): LogEntryData[] => {
   const departments = ["Turbine Hall", "Boiler Room", "Control Room", "Water Treatment", "Electrical Systems"];
   const shifts = ["Morning", "Afternoon", "Night"];
@@ -80,7 +78,6 @@ const SupervisorDashboard = () => {
     ? logs 
     : logs.filter(log => log.status.toLowerCase() === filter);
   
-  // Analytics data
   const totalLogs = logs.length;
   const pendingLogs = logs.filter(log => log.status === "Pending").length;
   const approvedLogs = logs.filter(log => log.status === "Approved").length;
