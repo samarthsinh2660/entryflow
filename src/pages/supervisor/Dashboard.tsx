@@ -411,9 +411,9 @@ const SupervisorDashboard = () => {
                           ? "outline" 
                           : log.status === "Pending" 
                             ? "secondary"
-                            : log.status === "Need Attention"
-                              ? "warning"
-                              : "destructive"
+                            : log.status === "Critical"
+                              ? "destructive"
+                              : "outline"
                       }
                     >
                       {log.status}

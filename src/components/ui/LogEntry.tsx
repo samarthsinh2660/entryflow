@@ -11,7 +11,7 @@ export interface LogEntryData {
   date: Date;
   shift: "Morning" | "Afternoon" | "Night";
   engineer: string;
-  status: "Pending" | "Approved" | "Flagged";
+  status: "Pending" | "Approved" | "Flagged" | "Need Attention" | "Critical";
   department: string;
   notes?: string;
   summary: string;
@@ -30,6 +30,8 @@ export const LogEntry = ({ data, onApprove, onFlag }: LogEntryProps) => {
     Pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
     Approved: "bg-green-100 text-green-800 border-green-200",
     Flagged: "bg-red-100 text-red-800 border-red-200",
+    "Need Attention": "bg-amber-100 text-amber-800 border-amber-200",
+    Critical: "bg-red-100 text-red-800 border-red-200",
   };
 
   const shiftColors = {

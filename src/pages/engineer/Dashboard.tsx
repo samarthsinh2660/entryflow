@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { Clipboard, AlertCircle, ChevronRight, Plus, Send, Clock, X } from "lucide-react";
+import { Clipboard, AlertCircle, Plus, Send, Clock, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/layout/PageTransition";
 import DashboardCard from "@/components/ui/DashboardCard";
@@ -145,7 +145,7 @@ const EngineerDashboard = () => {
     values.parameters = parameters;
     console.log(values);
     
-    // Add to recent logs
+    // Add to recent logs - Always set to "Pending Approval" regardless of status
     const newLog = {
       id: recentLogs.length + 1,
       date: format(new Date(), "yyyy-MM-dd"),
