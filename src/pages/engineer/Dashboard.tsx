@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { Clipboard, AlertCircle, ChevronRight, Plus, Send, Clock } from "lucide-react";
+import { Clipboard, AlertCircle, ChevronRight, Plus, Send, Clock, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import PageTransition from "@/components/layout/PageTransition";
 import DashboardCard from "@/components/ui/DashboardCard";
@@ -61,6 +61,9 @@ const formSchema = z.object({
   shift: z.string({
     required_error: "Please select a shift",
   }),
+  status: z.string({
+    required_error: "Please select a status",
+  }),
   equipmentStatus: z.string({
     required_error: "Equipment status is required",
   }),
@@ -70,6 +73,12 @@ const formSchema = z.object({
   safetyObservations: z.string().optional(),
   incidentsReported: z.boolean().default(false),
   incidentDetails: z.string().optional(),
+  parameters: z.array(
+    z.object({
+      name: z.string(),
+      value: z.string(),
+    })
+  ).default([]),
 });
 
 const EngineerDashboard = () => {
@@ -80,39 +89,60 @@ const EngineerDashboard = () => {
       date: "2023-07-12",
       department: "Turbine Hall",
       shift: "Morning",
-      status: "Submitted",
+      status: "Pending Approval",
     },
     {
       id: 2,
       date: "2023-07-11",
       department: "Boiler Room",
       shift: "Night",
-      status: "Approved",
+      status: "Pending Approval",
     },
     {
       id: 3,
       date: "2023-07-10",
       department: "Control Room",
       shift: "Afternoon",
-      status: "Flagged",
+      status: "Pending Approval",
     },
   ]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [parameters, setParameters] = useState<{ name: string; value: string }[]>([]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       department: "",
       shift: "",
+      status: "",
       equipmentStatus: "",
       operationalNotes: "",
       safetyObservations: "",
       incidentsReported: false,
       incidentDetails: "",
+      parameters: [],
     },
   });
 
+  const addParameter = () => {
+    setParameters([...parameters, { name: "", value: "" }]);
+  };
+
+  const removeParameter = (index: number) => {
+    const newParameters = [...parameters];
+    newParameters.splice(index, 1);
+    setParameters(newParameters);
+  };
+
+  const updateParameter = (index: number, field: 'name' | 'value', value: string) => {
+    const newParameters = [...parameters];
+    newParameters[index][field] = value;
+    setParameters(newParameters);
+  };
+
   const onSubmit = (values: z.infer<typeof formSchema>) => {
+    // Add parameters to form values
+    values.parameters = parameters;
     console.log(values);
     
     // Add to recent logs
@@ -121,15 +151,16 @@ const EngineerDashboard = () => {
       date: format(new Date(), "yyyy-MM-dd"),
       department: values.department,
       shift: values.shift,
-      status: "Submitted",
+      status: "Pending Approval", // Always set to "Pending Approval"
     };
     
     setRecentLogs([newLog, ...recentLogs]);
     setIsDialogOpen(false);
+    setParameters([]);
     
     toast({
       title: "Log Entry Submitted",
-      description: "Your log entry has been successfully recorded.",
+      description: "Your log entry has been submitted and is pending approval.",
     });
     
     form.reset();
@@ -174,7 +205,7 @@ const EngineerDashboard = () => {
                       name="department"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Department</FormLabel>
+                          <FormLabel>Department <span className="text-red-500">*</span></FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
@@ -198,7 +229,7 @@ const EngineerDashboard = () => {
                       name="shift"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Shift</FormLabel>
+                          <FormLabel>Shift <span className="text-red-500">*</span></FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
@@ -219,10 +250,36 @@ const EngineerDashboard = () => {
                   
                   <FormField
                     control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status <span className="text-red-500">*</span></FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Normal">Normal</SelectItem>
+                            <SelectItem value="Need Attention">Need Attention</SelectItem>
+                            <SelectItem value="Critical">Critical</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Note: All entries require supervisor approval regardless of status.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
                     name="equipmentStatus"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Equipment Status</FormLabel>
+                        <FormLabel>Equipment Status <span className="text-red-500">*</span></FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger>
@@ -247,7 +304,7 @@ const EngineerDashboard = () => {
                     name="operationalNotes"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Operational Notes</FormLabel>
+                        <FormLabel>Operational Notes <span className="text-red-500">*</span></FormLabel>
                         <FormControl>
                           <Textarea 
                             placeholder="Describe the operational conditions and activities during your shift..." 
@@ -283,6 +340,54 @@ const EngineerDashboard = () => {
                       </FormItem>
                     )}
                   />
+                  
+                  {/* Optional Parameters Section */}
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-medium">Optional Parameters</h3>
+                      <Button type="button" variant="outline" size="sm" onClick={addParameter}>
+                        <Plus className="h-4 w-4 mr-1" /> Add Parameter
+                      </Button>
+                    </div>
+                    
+                    {parameters.length > 0 ? (
+                      <div className="space-y-3">
+                        {parameters.map((param, index) => (
+                          <div key={index} className="flex gap-3 items-start">
+                            <div className="flex-1">
+                              <label className="text-sm font-medium">Parameter Name</label>
+                              <Input 
+                                value={param.name} 
+                                onChange={(e) => updateParameter(index, 'name', e.target.value)}
+                                placeholder="e.g., Temperature, Pressure"
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <label className="text-sm font-medium">Value</label>
+                              <Input 
+                                value={param.value} 
+                                onChange={(e) => updateParameter(index, 'value', e.target.value)}
+                                placeholder="e.g., 350°C, 2.5 MPa"
+                              />
+                            </div>
+                            <Button 
+                              type="button" 
+                              variant="ghost" 
+                              size="icon" 
+                              className="mt-6"
+                              onClick={() => removeParameter(index)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        No parameters added. Click the button above to add key-value pairs for additional measurements or observations.
+                      </p>
+                    )}
+                  </div>
                   
                   <FormField
                     control={form.control}
@@ -342,7 +447,7 @@ const EngineerDashboard = () => {
           </Dialog>
         </motion.div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <DashboardCard
             title="Current Shift"
             subtitle="Overview of your active shift"
@@ -399,40 +504,15 @@ const EngineerDashboard = () => {
                 </div>
               </div>
               
-              <div className="flex items-start p-2 rounded-md bg-green-50 border border-green-100">
+              <div className="flex items-start p-2 rounded-md bg-red-50 border border-red-100">
                 <div className="flex-shrink-0 mr-2 mt-0.5">
-                  <AlertCircle className="h-4 w-4 text-green-500" />
+                  <AlertCircle className="h-4 w-4 text-red-500" />
                 </div>
                 <div>
-                  <p className="text-sm text-green-800 font-medium">Log Entry Approved</p>
-                  <p className="text-xs text-green-700">Your morning check entry has been approved.</p>
+                  <p className="text-sm text-red-800 font-medium">Assignment: Fix Control Panel</p>
+                  <p className="text-xs text-red-700">You have been assigned to resolve an issue with the control panel.</p>
                 </div>
               </div>
-            </div>
-          </DashboardCard>
-          
-          <DashboardCard
-            title="Quick Actions"
-            subtitle="Common tasks and shortcuts"
-            icon={<Clipboard className="h-5 w-5" />}
-          >
-            <div className="space-y-2 mt-2">
-              <Button variant="outline" className="w-full justify-between text-left">
-                <span>Equipment Check</span>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" className="w-full justify-between text-left">
-                <span>Report Incident</span>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" className="w-full justify-between text-left">
-                <span>Handover Notes</span>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" className="w-full justify-between text-left">
-                <span>View Procedures</span>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
             </div>
           </DashboardCard>
         </div>
@@ -462,13 +542,7 @@ const EngineerDashboard = () => {
                           <p className="text-sm text-muted-foreground">{log.date} • {log.shift} Shift</p>
                         </div>
                         <Badge 
-                          variant={
-                            log.status === "Approved" 
-                              ? "outline" 
-                              : log.status === "Flagged" 
-                                ? "destructive" 
-                                : "secondary"
-                          }
+                          variant="secondary"
                         >
                           {log.status}
                         </Badge>
